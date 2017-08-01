@@ -23,7 +23,7 @@ NULL
 #' set_values_to_na(mtcars, cyl = ~ .x == 6, vs = is_zero)
 set_values_to_na <- function(data, ...) {
   dots <- quos(...)
-  stopifnot(names(dots) %in% names(data), !anyDuplicated(names(data)))
+  stopifnot(names(dots) %in% names(data), !anyDuplicated(names(dots)))
 
   for (i in seq_along(dots)) {
     name <- sym(names(dots)[i])
