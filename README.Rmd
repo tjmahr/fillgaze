@@ -105,3 +105,21 @@ ggplot(head(df, 40)) +
   labs(colour = "Variable", y = "Value")
 ```
 
+### Finding gaps in the data
+
+We can use `find_gaps()` to find the gaps in a column of data.
+
+```{r}
+find_gaps(df, GazeX)
+```
+
+The function also respects dplyr grouping, so that e.g, false gaps are not found
+between trials.
+
+```{r}
+df %>% group_by(Trial) %>% find_gaps(GazeX)
+
+# todo: unit tests
+```
+
+
