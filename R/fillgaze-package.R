@@ -115,13 +115,44 @@ find_gaps_in_group <- function(data, var) {
   # gaps <- Filter(has_legal_aois, gaps)
 
   gap_df <- purrr::map_df(gaps, tidy_gap)
-  gap_df <-  tibble::add_column(gap_df, var = quo_name(qvar), .before = 1)
+  gap_df <-  tibble::add_column(gap_df, .var = quo_name(qvar), .before = 1)
   tibble::as_tibble(gap_df)
 }
 
 
 
 
+
+#' @export
+fill_gaze <- function(data, ..., func = median, max_gap, max_sd) {
+  dots <- quos(...)
+
+  prepare_gaps <- function(var) {
+    df <- find_gaps(data, !! var)
+    df$sd_change <- df$change / sd(df$change)
+
+    too_long <- df$na_size > max_gap
+    df <- df[!too_long, ]
+
+    too_big <- abs(df$sd_change) > max_sd
+    df <- df[!too_big, ]
+
+    df
+  }
+
+  gaps <- purrr::map_df(dots, prepare_gaps)
+
+  for (gap_i in seq_len(nrow(gaps))) {
+    var_to_fill <- gaps[[gap_i, ".var"]]
+    rows_to_fill <- seq(gaps[[gap_i, "start"]] + 1, gaps[[gap_i, "end"]] - 1)
+    value_to_fill <- func(c(gaps[[gap_i, "start_value"]],
+                            gaps[[gap_i, "end_value"]]))
+
+
+    data[[rows_to_fill, var_to_fill]] <- value_to_fill
+  }
+  data
+}
 
 
 

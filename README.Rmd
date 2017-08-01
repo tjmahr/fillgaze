@@ -123,3 +123,12 @@ df %>% group_by(Trial) %>% find_gaps(GazeX)
 ```
 
 
+```{r}
+dots <- quos(GazeX, GazeY)
+max_gap <- 5
+max_sd <- 2
+func <- median
+# data <- df
+
+```
+
