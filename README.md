@@ -47,10 +47,11 @@ Every second or third point is incorrectly placed offscreen, indicated by a nega
 We would like to interpolate spans of missing data using neighboring points. That's the point of this package. The steps to solve the problem involve:
 
 -   \[x\] Converting offscreen values into proper `NA` values.
--   \[x\] Identifying gaps of missing values (streaks of successive `NA`s).
--   \[ \] Interpolating the values in a gap.
+-   \[x\] Identifying and describing gaps of missing values (streaks of successive `NA`s).
+-   \[x\] Interpolating the values in a gap.
+-   \[ \] Writing tests to confirm that everything works as expected. :innocent:
 
-### Setting values in several columns to NA
+### Setting values in several columns to `NA`
 
 We need to mark offscreen points as properly missing data. `set_values_to_na()` takes a dataframe and named filtering predicates. Here's the basic usage.
 
@@ -62,7 +63,7 @@ The values that return `TRUE` for each function are replaced with `NA` values. F
 
 -   look for the column `var1` in the dataframe,
 -   check which values of `.x < 0` are true where `.x` is a placeholder/pronoun for the values in `df$var1`,
--   replace those values where the test is `TRUE` with `NA`.
+-   and replace those values where the test is `TRUE` with `NA`.
 
 ``` r
 library(fillgaze)
@@ -103,7 +104,7 @@ last_plot() %+% head(df, 40)
 
 ### Finding gaps in the data
 
-We can use `find_gaze_gaps()` to find the gaps in a column of data. This function mostly is used internally. Users are not expectedly to routinely use this function, but I cover it here because the function for filling gaps relies on the data in this dataframe.
+We can use `find_gaze_gaps()` to locate the gaps in a column of data. This function mostly is used internally. Users are not expectedly to routinely use this function, but I cover it here because the function for filling gaps relies on the data in this dataframe.
 
 ``` r
 find_gaze_gaps(df, GazeX) %>% 
@@ -193,6 +194,10 @@ df <- df %>%
   fill_gaze_gaps(GazeX, time_var = Time, max_na_rows = 5)
 ```
 
+``` r
+## todo: unit tests
+```
+
 In this example, only `GazeX` has been interpolated. The median value is used. We can compare the results with the `GazeY` column.
 
 ``` r
@@ -251,4 +256,4 @@ last_plot() %+%
   labs(shape = "Point")
 ```
 
-![](fig/README-unnamed-chunk-13-1.png)
+![](fig/README-unnamed-chunk-14-1.png)
