@@ -38,15 +38,19 @@ set_values_to_na <- function(data, ...) {
 #' @export
 find_gaps <- function(data, var) {
   var <- enquo(var)
+
+  # If dataframe has dplyr groups, split based on those
   by_group <- split(dplyr::ungroup(data), f = dplyr::group_indices(data))
   gaps <- lapply(by_group, find_gaps_in_group, var)
 
+  # If there are groups, we need to change start/end frames by row number in
+  # overall table
   rows_per_group <- split(seq_len(nrow(data)), dplyr::group_indices(data))
   min_row_per_group <- lapply(rows_per_group, min)
 
-
-  # Add columns with groups
+  # Add grouping columns
   if (length(group_vars(data)) != 0) {
+    # But don't add group columns when a group didn't have any gaps
     with_gaps <- names(Filter(function(x) nrow(x) != 0, gaps))
 
     group_vars <- lapply(by_group, distinct, !!! dplyr::groups(data))
@@ -66,12 +70,11 @@ find_gaps <- function(data, var) {
 
   }
 
-  dplyr::bind_rows(gaps)
+  bind_rows(gaps)
 }
 
 find_gaps_in_group <- function(data, var) {
-  qvar <- var
-  gazes <- eval_tidy(qvar, data)
+  gazes <- eval_tidy(var, data)
 
   # Grab all the non-NA gaze frames.
   tracked <- which(!is.na(gazes))
@@ -102,20 +105,11 @@ find_gaps_in_group <- function(data, var) {
   find_these_gaps <- function(...) gap(..., data = gazes)
   gaps <- Map(find_these_gaps, gap_start, gap_end, gap_size)
 
-  # Only fill gaps no bigger than the interpolation window, gaps that don't
-  # involve first frame and gaps with the gaze location on both sides of window
-  # has_legal_length <- function(gap) gap$na_size <= frames_in_window
   is_not_first_frame <- function(gap) gap$start != 0
-  # is_fillable <- function(gap) gazes[gap$start] == gazes[gap$end]
-  # has_legal_aois <- function(gap) gazes[gap$start] %in% fillable
-
-  # gaps <- Filter(has_legal_length, gaps)
   gaps <- Filter(is_not_first_frame, gaps)
-  # gaps <- Filter(is_fillable, gaps)
-  # gaps <- Filter(has_legal_aois, gaps)
 
   gap_df <- purrr::map_df(gaps, tidy_gap)
-  gap_df <-  tibble::add_column(gap_df, .var = quo_name(qvar), .before = 1)
+  gap_df <- tibble::add_column(gap_df, .var = quo_name(var), .before = 1)
   tibble::as_tibble(gap_df)
 }
 
@@ -124,7 +118,7 @@ find_gaps_in_group <- function(data, var) {
 
 
 #' @export
-fill_gaze <- function(data, ..., func = median, max_gap, max_sd) {
+fill_gaze_gaps <- function(data, ..., func = median, max_gap, max_sd) {
   dots <- quos(...)
 
   prepare_gaps <- function(var) {
@@ -149,7 +143,7 @@ fill_gaze <- function(data, ..., func = median, max_gap, max_sd) {
                             gaps[[gap_i, "end_value"]]))
 
 
-    data[[rows_to_fill, var_to_fill]] <- value_to_fill
+    data[rows_to_fill, var_to_fill] <- value_to_fill
   }
   data
 }
@@ -157,6 +151,28 @@ fill_gaze <- function(data, ..., func = median, max_gap, max_sd) {
 
 
 
+
+
+# Simple container for the information we care about when interpolating a gap
+gap <- function(start, end, na_size, data) {
+  list(
+    start = start,
+    end = end,
+    na_size = na_size,
+    start_value = data[start],
+    end_value = data[end],
+    change = data[end] - data[start]
+  )
+}
+
+tidy_gap <- function(gap) {
+  data.frame(
+    start = gap$start, end = gap$end, na_size = gap$na_size,
+    start_value = gap$start_value, end_value = gap$end_value,
+    change = gap$change
+    # , seq = list(gap$seq), na_seq = list(gap$na_seq)
+  )
+}
 
 
 
