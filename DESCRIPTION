@@ -10,7 +10,9 @@ LazyData: true
 Imports: rlang,
     dplyr,
     purrr,
-    tibble
+    tibble,
+    stats,
+    tidyselect
 Suggests: testthat
 RoxygenNote: 6.0.1
 Roxygen: list(markdown = TRUE)

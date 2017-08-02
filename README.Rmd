@@ -26,7 +26,7 @@ You can install fillgaze from github with:
 devtools::install_github("tjmahr/fillgaze")
 ```
 
-## Example
+## Package overview
 
 This package was created in response to a very strange file of eyetracking data.
 
@@ -54,7 +54,7 @@ negative pixel values for the gaze locations. It is physiologically impossible
 for a person's gaze to oscillate so quickly and with such magnitude (the gaze 
 is tracked on a large screen display).
 
-I would like to interpolate spans of missing data using 
+We would like to interpolate spans of missing data using 
 neighboring points. That's the point of this package.
 The steps to solve the problem involve:
 
@@ -82,7 +82,7 @@ For example, `set_values_to_na(df, var1 = ~ .x < 0)` would:
 
 ```{r}
 library(fillgaze)
-before <- head(df$GazeX)
+original_df <- df
 
 df <- df %>% 
   set_values_to_na(
@@ -94,7 +94,7 @@ df <- df %>%
     REyeCoordY = ~ .x < -.1)
 
 # Before and after on some of the GazeX values
-data_frame(before, after = head(df$GazeX))
+data_frame(before = head(original_df$GazeX), after = head(df$GazeX))
 ```
 
 Now, those offscreen points will not be plotted because they are `NA`.
@@ -105,43 +105,89 @@ last_plot() %+% head(df, 40)
 
 ### Finding gaps in the data
 
-We can use `find_gaps()` to find the gaps in a column of data. `start` and `end`
-are the nearest non-`NA` values. Those values are in `start_value` and
-`end_value`. The number of `NA` values is in `na_size`.
+We can use `find_gaze_gaps()` to find the gaps in a column of data. This
+function mostly is used internally. Users are not expectedly to routinely use
+this function, but I cover it here because the function for filling gaps relies
+on the data in this dataframe.
 
-```{r}
-find_gaps(df, GazeX)
+```{r, width = 120}
+find_gaze_gaps(df, GazeX) %>% 
+  print(width = 120)
 ```
 
-The function also respects dplyr grouping, so that e.g, false gaps are not found
+Each row describes a gap in the column. 
+
+* `start_row` and `end_row` contain row numbers of nearest non-`NA` values. 
+* `na_rows` is the number of successive `NA`s in the gap.
+* `start_value`and `end_value` contain the nearest non-`NA` values. 
+* `change_value` is the difference between `start_value` and `end_value`.
+
+The function also measure the duration of the gap (`change_time`). By default,
+it uses row numbers (`.rowid`) to measure duration. We can use an explicit
+column to use as the measure of time.
+
+```{r, width = 120}
+find_gaze_gaps(df, GazeX, time_var = Time) %>% 
+  print(width = 120)
+```
+
+The function also respects dplyr grouping, so that e.g., false gaps are not found
 between trials.
 
 ```{r}
 df %>% 
   group_by(Trial) %>% 
-  find_gaps(GazeX)
-
-# todo: unit tests
+  find_gaze_gaps(GazeX)
 ```
 
-This function is used internally. Users are not expectedly to routinely use this
-function, but I cover it here because the next function for filling gaps uses
-the indices and values in this dataframe.
+```{r}
+## todo: unit tests
+```
+
+
 
 ### Interpolating values in gaps
 
-fill_gaze_gaps
+`fill_gaze_gaps()` will fill in the gaps in selected columns. We can set limits 
+on which gaps are filled:
+
+- `max_na_rows`: don't fill gaps with more than successive `NA` rows than `max_na_rows`
+- `max_duration`: don't fill gaps with a duration larger than `max_duration` 
+- `max_sd`: don't fill gaps where the relative change in the variable is more than `max_sd` standard deviations in magnitude
 
 ```{r}
-dots <- quos(GazeX, GazeY)
-max_gap <- 5
-max_sd <- 2
-func <- median
-data <- df
-
-df <- fill_gaze(df, GazeX, GazeY, func = median, max_gap = 5, max_sd = 2)
-
-last_plot() %+% head(df, 40)
-
+df <- df %>% 
+  group_by(Trial) %>% 
+  fill_gaze_gaps(GazeX, time_var = Time, max_na_rows = 5)
 ```
+
+In this example, only `GazeX` has been interpolated. The median value is used.
+We can compare the results with the `GazeY` column.
+
+```{r}
+df %>% select(Time:GazeY)
+```
+
+`fill_gaze_gaps()` also works with the variable selection helpers from dplyr/tidyselect.
+
+```{r}
+df <- df %>% 
+  fill_gaze_gaps(GazeX, GazeY, matches("EyeCoord"), 
+                 time_var = Time, max_na_rows = 5, max_sd = 2) %>% 
+  ungroup()
+df
+```
+
+```{r, fig.height = 3}
+was_offscreen <- (original_df$GazeX < -100) %>% 
+  ifelse("Interpolated", "Original\nRaw Data")
+
+last_plot() %+% 
+  head(df, 40) + 
+  aes(alpha = head(was_offscreen, 40), shape = head(was_offscreen, 40)) + 
+  scale_alpha_discrete(name = "Point", range = c(.3, 1)) + 
+  labs(shape = "Point")
+```
+
+
 

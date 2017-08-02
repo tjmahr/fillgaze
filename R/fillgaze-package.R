@@ -2,7 +2,8 @@
 #'
 #' @name fillgaze
 #' @docType package
-#' @import rlang
+#' @import rlang dplyr
+#' @importFrom tibble as_tibble data_frame add_column rowid_to_column
 NULL
 
 
@@ -36,12 +37,22 @@ set_values_to_na <- function(data, ...) {
 
 
 #' @export
-find_gaps <- function(data, var) {
+find_gaze_gaps <- function(data, var, time_var = NULL) {
   var <- enquo(var)
+  time_var <- enquo(time_var)
+
+  if (quo_is_null(time_var)) {
+    # rowid_to_column doesn't work on grouped dfs
+    groups <- groups(data)
+    data <- ungroup(data)
+    data <- rowid_to_column(data, ".rowid")
+    data <- group_by(data, !!! groups)
+    time_var <- quo(!! sym(".rowid"))
+  }
 
   # If dataframe has dplyr groups, split based on those
   by_group <- split(dplyr::ungroup(data), f = dplyr::group_indices(data))
-  gaps <- lapply(by_group, find_gaps_in_group, var)
+  gaps <- lapply(by_group, find_gaps_in_group, var, time_var)
 
   # If there are groups, we need to change start/end frames by row number in
   # overall table
@@ -49,7 +60,7 @@ find_gaps <- function(data, var) {
   min_row_per_group <- lapply(rows_per_group, min)
 
   # Add grouping columns
-  if (length(group_vars(data)) != 0) {
+  if (!length_zero(group_vars(data))) {
     # But don't add group columns when a group didn't have any gaps
     with_gaps <- names(Filter(function(x) nrow(x) != 0, gaps))
 
@@ -58,14 +69,14 @@ find_gaps <- function(data, var) {
 
     for (group in with_gaps) {
       cols_to_add <- as.list(group_vars[[group]])
-      gaps[[group]] <- tibble::add_column(
+      gaps[[group]] <- add_column(
         gaps[[group]],
         .before = 1,
         UQS(cols_to_add))
 
       offset <- min_row_per_group[[group]] - 1
-      gaps[[group]]["start"] <- gaps[[group]]["start"] + offset
-      gaps[[group]]["end"] <- gaps[[group]]["end"] + offset
+      gaps[[group]]["start_row"] <- gaps[[group]]["start_row"] + offset
+      gaps[[group]]["end_row"] <- gaps[[group]]["end_row"] + offset
     }
 
   }
@@ -73,8 +84,9 @@ find_gaps <- function(data, var) {
   bind_rows(gaps)
 }
 
-find_gaps_in_group <- function(data, var) {
+find_gaps_in_group <- function(data, var, time_var) {
   gazes <- eval_tidy(var, data)
+  times <- eval_tidy(time_var, data)
 
   # Grab all the non-NA gaze frames.
   tracked <- which(!is.na(gazes))
@@ -102,46 +114,52 @@ find_gaps_in_group <- function(data, var) {
     !is.na(gazes[c(gap_start, gap_end)])
   )
 
-  find_these_gaps <- function(...) gap(..., data = gazes)
+  find_these_gaps <- function(...) gap(..., data = gazes, times = times)
   gaps <- Map(find_these_gaps, gap_start, gap_end, gap_size)
 
-  is_not_first_frame <- function(gap) gap$start != 0
+  is_not_first_frame <- function(gap) gap$start_row != 0
   gaps <- Filter(is_not_first_frame, gaps)
 
   gap_df <- purrr::map_df(gaps, tidy_gap)
-  gap_df <- tibble::add_column(gap_df, .var = quo_name(var), .before = 1)
-  tibble::as_tibble(gap_df)
+  gap_df <- add_column(
+    gap_df, .before = 1,
+    .var = quo_name(var),
+    .time_var = quo_name(time_var))
+  as_tibble(gap_df)
 }
 
 
-
-
-
 #' @export
-fill_gaze_gaps <- function(data, ..., func = median, max_gap, max_sd) {
+fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL, max_duration = NULL,  max_sd = NULL) {
+  func <- stats::median
   dots <- quos(...)
+  time_var <- enquo(time_var)
+
+  columns_to_fill <- tidyselect::vars_select(names(data), !!! dots)
+  vars <- quos(!!! syms(columns_to_fill))
 
   prepare_gaps <- function(var) {
-    df <- find_gaps(data, !! var)
-    df$sd_change <- df$change / sd(df$change)
+    df <- find_gaze_gaps(data, !! var, !! time_var)
+    df$sd_change <- df$change_value / sd(df$change_value)
 
-    too_long <- df$na_size > max_gap
-    df <- df[!too_long, ]
-
-    too_big <- abs(df$sd_change) > max_sd
-    df <- df[!too_big, ]
+    df <- filter(df, !treat_empty_as_false(na_rows > max_na_rows))
+    df <- filter(df, !treat_empty_as_false(change_time > max_duration))
+    df <- filter(df, !treat_empty_as_false(abs(sd_change) > max_sd))
 
     df
   }
 
-  gaps <- purrr::map_df(dots, prepare_gaps)
+  gaps <- purrr::map_df(vars, prepare_gaps)
 
   for (gap_i in seq_len(nrow(gaps))) {
     var_to_fill <- gaps[[gap_i, ".var"]]
-    rows_to_fill <- seq(gaps[[gap_i, "start"]] + 1, gaps[[gap_i, "end"]] - 1)
+
+    first_na_row <- gaps[[gap_i, "start_row"]] + 1
+    last_na_row <- gaps[[gap_i, "end_row"]] - 1
+    rows_to_fill <- seq(first_na_row, last_na_row)
+
     value_to_fill <- func(c(gaps[[gap_i, "start_value"]],
                             gaps[[gap_i, "end_value"]]))
-
 
     data[rows_to_fill, var_to_fill] <- value_to_fill
   }
@@ -154,29 +172,40 @@ fill_gaze_gaps <- function(data, ..., func = median, max_gap, max_sd) {
 
 
 # Simple container for the information we care about when interpolating a gap
-gap <- function(start, end, na_size, data) {
+gap <- function(start, end, na_size, data, times) {
   list(
-    start = start,
-    end = end,
-    na_size = na_size,
+    start_row = start,
+    end_row = end,
+    na_rows = na_size,
     start_value = data[start],
     end_value = data[end],
-    change = data[end] - data[start]
+    change = data[end] - data[start],
+    time_first_na = times[start + 1],
+    time_end = times[end],
+    change_time = times[end] - times[start + 1]
   )
 }
 
 tidy_gap <- function(gap) {
   data.frame(
-    start = gap$start, end = gap$end, na_size = gap$na_size,
-    start_value = gap$start_value, end_value = gap$end_value,
-    change = gap$change
-    # , seq = list(gap$seq), na_seq = list(gap$na_seq)
+    start_row = gap$start_row,
+    end_row = gap$end_row,
+    na_rows = gap$na_rows,
+    start_value = gap$start_value,
+    end_value = gap$end_value,
+    change_value = gap$change,
+    time_first_na = gap$time_first_na,
+    time_end = gap$time_end,
+    change_time = gap$change_time
   )
 }
 
 
 
 
+treat_empty_as_false <- function(xs) {
+  if (length_zero(xs)) FALSE else xs
+}
 
-
+length_zero <- function(x) length(x) == 0
 
