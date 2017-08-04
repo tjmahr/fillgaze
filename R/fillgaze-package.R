@@ -140,15 +140,15 @@ fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL, max_d
 
   prepare_gaps <- function(var) {
     df <- find_gaze_gaps(data, !! var, !! time_var)
-    df$sd_change <- df$change_value / sd(df$change_value)
+    if (nrow(df) != 0) {
+      df$sd_change <- df$change_value / sd(df$change_value)
 
-    df <- filter(df, !treat_empty_as_false(na_rows > max_na_rows))
-    df <- filter(df, !treat_empty_as_false(change_time > max_duration))
-    df <- filter(df, !treat_empty_as_false(abs(sd_change) > max_sd))
-
+      df <- filter(df, !treat_empty_as_false(na_rows > max_na_rows))
+      df <- filter(df, !treat_empty_as_false(change_time > max_duration))
+      df <- filter(df, !treat_empty_as_false(abs(sd_change) > max_sd))
+    }
     df
   }
-
   gaps <- purrr::map_df(vars, prepare_gaps)
 
   for (gap_i in seq_len(nrow(gaps))) {
