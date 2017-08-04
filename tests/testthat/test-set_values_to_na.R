@@ -1,10 +1,11 @@
-context("set_values_to_na")
+context("set_values_to_na()")
 
-test_that("set_values_to_na handles formulas and named functions", {
-  df <- data.frame(x = -2:2,
-             y = 1:5,
-             z = c(Inf, Inf, 5:7),
-             q = 11:15)
+test_that("set_values_to_na() handles formulas and named functions", {
+  df <- data.frame(
+    x = -2:2,
+    y = 1:5,
+    z = c(Inf, Inf, 5:7),
+    q = 11:15)
 
   f1 <- ~ .x < 0
   f2 <- function(x) x < 3

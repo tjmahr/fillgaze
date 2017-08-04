@@ -138,10 +138,27 @@ fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL, max_d
   columns_to_fill <- tidyselect::vars_select(names(data), !!! dots)
   vars <- quos(!!! syms(columns_to_fill))
 
+  data_grouped <- split(data, group_indices(data))
+
   prepare_gaps <- function(var) {
     df <- find_gaze_gaps(data, !! var, !! time_var)
     if (nrow(df) != 0) {
-      df$sd_change <- df$change_value / sd(df$change_value)
+      # Find typical changes between frames
+      diffs <- purrr::map(data_grouped, ~ diff(pull(.x, !! var), 1))
+      vals <- unlist(diffs, use.names = FALSE)
+      vals <- vals[!is.na(vals)]
+
+      # Compute change per row
+      #   1.0 -> NA -> 2.0
+      # has 1 NA row and 2 changes, so add 1 to NA row to
+      # compute average change
+      change_per_na_row <- df$change_value / (df$na_rows + 1)
+
+      typical_change <- sd(c(change_per_na_row, vals))
+      df$sd_change <- change_per_na_row / typical_change
+      # 10, 20, NA, 30, 40, NA, 50, 60 has SD(change) of 0, so division by 0
+      # yields Inf. Convert to 0.
+      df$sd_change <- ifelse(!is.finite(df$sd_change), 0.0001, df$sd_change)
 
       df <- filter(df, !treat_empty_as_false(na_rows > max_na_rows))
       df <- filter(df, !treat_empty_as_false(change_time > max_duration))
@@ -149,6 +166,7 @@ fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL, max_d
     }
     df
   }
+
   gaps <- purrr::map_df(vars, prepare_gaps)
 
   for (gap_i in seq_len(nrow(gaps))) {

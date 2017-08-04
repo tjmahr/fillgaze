@@ -40,7 +40,7 @@ ggplot(head(df, 40)) +
        color = "Variable")
 ```
 
-![](fig/README-unnamed-chunk-2-1.png)
+![](fig/README-original%20data-1.png)
 
 Every second or third point is incorrectly placed offscreen, indicated by a negative pixel values for the gaze locations. It is physiologically impossible for a person's gaze to oscillate so quickly and with such magnitude (the gaze is tracked on a large screen display).
 
@@ -49,7 +49,7 @@ We would like to interpolate spans of missing data using neighboring points. Tha
 -   \[x\] Converting offscreen values into proper `NA` values.
 -   \[x\] Identifying and describing gaps of missing values (streaks of successive `NA`s).
 -   \[x\] Interpolating the values in a gap.
--   \[ \] Writing tests to confirm that everything works as expected. :innocent:
+-   \[x\] Writing tests to confirm that everything works as expected. :innocent:
 
 ### Setting values in several columns to `NA`
 
@@ -100,7 +100,7 @@ last_plot() %+% head(df, 40)
 #> Warning: Removed 15 rows containing missing values (geom_point).
 ```
 
-![](fig/README-unnamed-chunk-5-1.png)
+![](fig/README-trimmed%20data-1.png)
 
 ### Finding gaps in the data
 
@@ -176,10 +176,6 @@ df %>%
 #> #   time_first_na <int>, time_end <int>, change_time <int>
 ```
 
-``` r
-## todo: unit tests
-```
-
 ### Interpolating values in gaps
 
 `fill_gaze_gaps()` will fill in the gaps in selected columns. We can set limits on which gaps are filled:
@@ -192,10 +188,6 @@ df %>%
 df <- df %>% 
   group_by(Trial) %>% 
   fill_gaze_gaps(GazeX, time_var = Time, max_na_rows = 5)
-```
-
-``` r
-## todo: unit tests
 ```
 
 In this example, only `GazeX` has been interpolated. The median value is used. We can compare the results with the `GazeY` column.
@@ -256,4 +248,4 @@ last_plot() %+%
   labs(shape = "Point")
 ```
 
-![](fig/README-unnamed-chunk-14-1.png)
+![](fig/README-interpolated-1.png)

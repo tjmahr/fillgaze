@@ -36,7 +36,7 @@ df <- readr::read_csv("inst/test-gaze.csv")
 
 Here is the problem with this file:
 
-```{r, fig.height = 3}
+```{r original data, fig.height = 3}
 library(dplyr, warn.conflicts = FALSE)
 library(ggplot2)
 
@@ -62,7 +62,7 @@ The steps to solve the problem involve:
 - [x] Identifying and describing gaps of missing values (streaks of 
   successive `NA`s).
 - [x] Interpolating the values in a gap.
-- [ ] Writing tests to confirm that everything works as expected. :innocent:
+- [x] Writing tests to confirm that everything works as expected. :innocent:
 
 ### Setting values in several columns to `NA`
 
@@ -101,7 +101,7 @@ data_frame(before = head(original_df$GazeX), after = head(df$GazeX))
 
 Now, those offscreen points will not be plotted because they are `NA`.
 
-```{r, fig.height = 3}
+```{r trimmed data, fig.height = 3}
 last_plot() %+% head(df, 40)
 ```
 
@@ -142,11 +142,6 @@ df %>%
   find_gaze_gaps(GazeX)
 ```
 
-```{r}
-## todo: unit tests
-```
-
-
 
 ### Interpolating values in gaps
 
@@ -162,11 +157,6 @@ df <- df %>%
   group_by(Trial) %>% 
   fill_gaze_gaps(GazeX, time_var = Time, max_na_rows = 5)
 ```
-
-```{r}
-## todo: unit tests
-```
-
 
 In this example, only `GazeX` has been interpolated. The median value is used.
 We can compare the results with the `GazeY` column.
@@ -185,7 +175,7 @@ df <- df %>%
 df
 ```
 
-```{r, fig.height = 3}
+```{r interpolated, fig.height = 3}
 was_offscreen <- (original_df$GazeX < -100) %>% 
   ifelse("Interpolated", "Original\nRaw Data")
 
