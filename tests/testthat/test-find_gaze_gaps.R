@@ -16,7 +16,8 @@ df <- data.frame(
 )
 
 names_no_times <- c(".var", "start_row", "end_row", "na_rows",
-                    "start_value", "end_value", "change_value")
+                    "start_value", "end_value", "change_value",
+                    "sd_change")
 
 
 test_that("finding gaze gaps ignores gaps on ends of window", {
@@ -45,9 +46,12 @@ test_that("finding gaze gaps works with no groups and no time columns", {
   expect_equal(gaps$start_value, 2)
   expect_equal(gaps$end_value, 5)
   expect_equal(gaps$change_value, gaps$end_value - gaps$start_value)
+  expect_equal(gaps$time_start, gaps$start_row)
   expect_equal(gaps$time_first_na, gaps$start_row + 1)
   expect_equal(gaps$time_end, gaps$end_row)
-  expect_equal(gaps$change_time, gaps$na_rows)
+  expect_equal(gaps$na_duration, gaps$na_rows)
+  expect_equal(gaps$change_time, gaps$time_end - gaps$time_start)
+  expect_equal(gaps$sd_change, 0.0001)
 
   # two gaps
   gaps <- find_gaze_gaps(df, z)
@@ -58,11 +62,13 @@ test_that("finding gaze gaps works with no groups and no time columns", {
   expect_equal(gaps$start_value, c(1, 4) * 10)
   expect_equal(gaps$end_value, c(3, 6) * 10)
   expect_equal(gaps$change_value, gaps$end_value - gaps$start_value)
+  expect_equal(gaps$time_start, gaps$start_row)
   expect_equal(gaps$time_first_na, gaps$start_row + 1)
   expect_equal(gaps$time_end, gaps$end_row)
-  expect_equal(gaps$change_time, gaps$na_rows)
+  expect_equal(gaps$na_duration, gaps$na_rows)
+  expect_equal(gaps$change_time, gaps$time_end - gaps$time_start)
+  expect_equal(gaps$sd_change, c(0.0001, 0.0001))
 })
-
 
 test_that("finding gaze gaps works with time column and no groups", {
   ## one gaps
@@ -71,9 +77,11 @@ test_that("finding gaze gaps works with time column and no groups", {
 
   # time related things differ
   expect_equal(gaps$.time_var, "time")
+  expect_equal(gaps$time_start, 6)
   expect_equal(gaps$time_first_na, 9)
   expect_equal(gaps$time_end, 15)
-  expect_equal(gaps$change_time, 15 - 9)
+  expect_equal(gaps$change_time, 15 - 6)
+  expect_equal(gaps$na_duration, 15 - 9)
 
   # no other changes
   expect_equal(gaps[c(names_no_times)], gaps_no_time[c(names_no_times)])
@@ -84,9 +92,11 @@ test_that("finding gaze gaps works with time column and no groups", {
 
   # time related things differ
   expect_equal(gaps$.time_var, c("time", "time"))
+  expect_equal(gaps$time_start, c(3, 12))
   expect_equal(gaps$time_first_na, c(6, 15))
   expect_equal(gaps$time_end, c(9, 18))
-  expect_equal(gaps$change_time, c(3, 3))
+  expect_equal(gaps$change_time, c(6, 6))
+  expect_equal(gaps$na_duration, c(3, 3))
 
   # no other changes
   expect_equal(gaps[c(names_no_times)], gaps_no_time[c(names_no_times)])
@@ -107,14 +117,14 @@ test_that("finding gaze gaps handles grouped dataframes", {
 
   # new column, otherwise everything else unchanged
   expect_named(gaps, c("day", "trial", names(ungrouped_gaps)))
-  expect_equal(gaps[, c(-1, -2)], ungrouped_gaps)
+  expect_equal(gaps[, c(-1, -2, -14)], ungrouped_gaps[-12])
 
   # with a time variable
   gaps <- find_gaze_gaps(df_grouped, z, time_var = time)
   ungrouped_gaps <- find_gaze_gaps(df, z, time_var = time)
 
   expect_named(gaps, c("day", "trial", names(ungrouped_gaps)))
-  expect_equal(gaps[, c(-1, -2)], ungrouped_gaps)
+  expect_equal(gaps[, c(-1, -2, -14)], ungrouped_gaps[-12])
 })
 
 

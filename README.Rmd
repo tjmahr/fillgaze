@@ -168,6 +168,11 @@ df %>% select(Time:GazeY)
 `fill_gaze_gaps()` also works with the variable selection helpers from dplyr/tidyselect.
 
 ```{r}
+
+
+
+
+
 df <- df %>% 
   fill_gaze_gaps(GazeX, GazeY, matches("EyeCoord"), 
                  time_var = Time, max_na_rows = 5, max_sd = 2) %>% 

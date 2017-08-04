@@ -109,7 +109,7 @@ We can use `find_gaze_gaps()` to locate the gaps in a column of data. This funct
 ``` r
 find_gaze_gaps(df, GazeX) %>% 
   print(width = 120)
-#> # A tibble: 579 x 11
+#> # A tibble: 579 x 12
 #>     .var .time_var start_row end_row na_rows start_value end_value change_value time_first_na time_end change_time
 #>    <chr>     <chr>     <dbl>   <dbl>   <dbl>       <dbl>     <dbl>        <dbl>         <int>    <int>       <int>
 #>  1 GazeX    .rowid         1       4       2    1176.452  1184.452        8.000             2        4           2
@@ -122,7 +122,7 @@ find_gaze_gaps(df, GazeX) %>%
 #>  8 GazeX    .rowid        23      25       1    1164.210  1171.983        7.773            24       25           1
 #>  9 GazeX    .rowid        26      28       1    1158.890  1194.300       35.410            27       28           1
 #> 10 GazeX    .rowid        29      31       1    1207.380  1179.723      -27.657            30       31           1
-#> # ... with 569 more rows
+#> # ... with 569 more rows, and 1 more variables: sd_change <dbl>
 ```
 
 Each row describes a gap in the column.
@@ -137,7 +137,7 @@ The function also measure the duration of the gap (`change_time`). By default, i
 ``` r
 find_gaze_gaps(df, GazeX, time_var = Time) %>% 
   print(width = 120)
-#> # A tibble: 579 x 11
+#> # A tibble: 579 x 12
 #>     .var .time_var start_row end_row na_rows start_value end_value change_value time_first_na     time_end change_time
 #>    <chr>     <chr>     <dbl>   <dbl>   <dbl>       <dbl>     <dbl>        <dbl>         <dbl>        <dbl>       <dbl>
 #>  1 GazeX      Time         1       4       2    1176.452  1184.452        8.000  1.493309e+12 1.493309e+12    33.33179
@@ -150,7 +150,7 @@ find_gaze_gaps(df, GazeX, time_var = Time) %>%
 #>  8 GazeX      Time        23      25       1    1164.210  1171.983        7.773  1.493309e+12 1.493309e+12    16.66602
 #>  9 GazeX      Time        26      28       1    1158.890  1194.300       35.410  1.493309e+12 1.493309e+12    16.66602
 #> 10 GazeX      Time        29      31       1    1207.380  1179.723      -27.657  1.493309e+12 1.493309e+12    16.66577
-#> # ... with 569 more rows
+#> # ... with 569 more rows, and 1 more variables: sd_change <dbl>
 ```
 
 The function also respects dplyr grouping, so that e.g., false gaps are not found between trials.
@@ -159,7 +159,7 @@ The function also respects dplyr grouping, so that e.g., false gaps are not foun
 df %>% 
   group_by(Trial) %>% 
   find_gaze_gaps(GazeX)
-#> # A tibble: 561 x 12
+#> # A tibble: 561 x 13
 #>    Trial  .var .time_var start_row end_row na_rows start_value end_value
 #>    <int> <chr>     <chr>     <dbl>   <dbl>   <dbl>       <dbl>     <dbl>
 #>  1     1 GazeX    .rowid         1       4       2    1176.452  1184.452
@@ -172,8 +172,9 @@ df %>%
 #>  8     1 GazeX    .rowid        23      25       1    1164.210  1171.983
 #>  9     1 GazeX    .rowid        26      28       1    1158.890  1194.300
 #> 10     1 GazeX    .rowid        29      31       1    1207.380  1179.723
-#> # ... with 551 more rows, and 4 more variables: change_value <dbl>,
-#> #   time_first_na <int>, time_end <int>, change_time <int>
+#> # ... with 551 more rows, and 5 more variables: change_value <dbl>,
+#> #   time_first_na <int>, time_end <int>, change_time <int>,
+#> #   sd_change <dbl>
 ```
 
 ### Interpolating values in gaps
@@ -214,6 +215,11 @@ df %>% select(Time:GazeY)
 `fill_gaze_gaps()` also works with the variable selection helpers from dplyr/tidyselect.
 
 ``` r
+
+
+
+
+
 df <- df %>% 
   fill_gaze_gaps(GazeX, GazeY, matches("EyeCoord"), 
                  time_var = Time, max_na_rows = 5, max_sd = 2) %>% 
@@ -246,6 +252,7 @@ last_plot() %+%
   aes(alpha = head(was_offscreen, 40), shape = head(was_offscreen, 40)) + 
   scale_alpha_discrete(name = "Point", range = c(.3, 1)) + 
   labs(shape = "Point")
+#> Warning: Removed 1 rows containing missing values (geom_point).
 ```
 
 ![](fig/README-interpolated-1.png)

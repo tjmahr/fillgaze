@@ -144,6 +144,7 @@ test_that("fill gaps less than sd value", {
   expect_equal(df_filled_10, df_everything_filled)
 
   # target the change in w
+  df_filled_1 <- find_gaze_gaps(df, z, time_var = time)
   df_filled_1 <- fill_gaze_gaps(df, w:z, time_var = time, max_sd = 1)
   expect_equal(df_filled_1$z, df_everything_filled$z)
 

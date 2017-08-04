@@ -81,7 +81,31 @@ find_gaze_gaps <- function(data, var, time_var = NULL) {
 
   }
 
-  bind_rows(gaps)
+  df_gaps <- bind_rows(gaps)
+
+  if (nrow(df_gaps) != 0) {
+    # Find typical changes between frames
+    diffs <- purrr::map(by_group, ~ diff(pull(.x, !! var), 1))
+    all_diffs <- unlist(diffs, use.names = FALSE)
+    clean_vals <- all_diffs[!is.na(all_diffs)]
+
+    time_diffs <- purrr::map(by_group, ~ diff(pull(.x, !! time_var), 1))
+    all_time_diffs <- unlist(time_diffs, use.names = FALSE)
+    clean_times <- all_time_diffs[!is.na(all_diffs)]
+
+    # Compute change per change in time
+    clean_change_per_time <- clean_vals / clean_times
+    change_per_time <- df_gaps$change_value / df_gaps$change_time
+
+    typical_change <- sd(c(clean_change_per_time, change_per_time))
+    df_gaps$sd_change <- change_per_time / typical_change
+    # 10, 20, NA, 30, 40, NA, 50, 60 has SD(change) of 0, so division by 0
+    # yields Inf. Convert to 0-ish.
+    df_gaps$sd_change <- ifelse(!is.finite(df_gaps$sd_change), 0.0001,
+                                df_gaps$sd_change)
+  }
+
+  df_gaps
 }
 
 find_gaps_in_group <- function(data, var, time_var) {
@@ -143,25 +167,8 @@ fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL, max_d
   prepare_gaps <- function(var) {
     df <- find_gaze_gaps(data, !! var, !! time_var)
     if (nrow(df) != 0) {
-      # Find typical changes between frames
-      diffs <- purrr::map(data_grouped, ~ diff(pull(.x, !! var), 1))
-      vals <- unlist(diffs, use.names = FALSE)
-      vals <- vals[!is.na(vals)]
-
-      # Compute change per row
-      #   1.0 -> NA -> 2.0
-      # has 1 NA row and 2 changes, so add 1 to NA row to
-      # compute average change
-      change_per_na_row <- df$change_value / (df$na_rows + 1)
-
-      typical_change <- sd(c(change_per_na_row, vals))
-      df$sd_change <- change_per_na_row / typical_change
-      # 10, 20, NA, 30, 40, NA, 50, 60 has SD(change) of 0, so division by 0
-      # yields Inf. Convert to 0.
-      df$sd_change <- ifelse(!is.finite(df$sd_change), 0.0001, df$sd_change)
-
       df <- filter(df, !treat_empty_as_false(na_rows > max_na_rows))
-      df <- filter(df, !treat_empty_as_false(change_time > max_duration))
+      df <- filter(df, !treat_empty_as_false(na_duration > max_duration))
       df <- filter(df, !treat_empty_as_false(abs(sd_change) > max_sd))
     }
     df
@@ -198,9 +205,11 @@ gap <- function(start, end, na_size, data, times) {
     start_value = data[start],
     end_value = data[end],
     change = data[end] - data[start],
+    time_start = times[start],
     time_first_na = times[start + 1],
     time_end = times[end],
-    change_time = times[end] - times[start + 1]
+    na_duration = times[end] - times[start + 1],
+    change_time = times[end] - times[start]
   )
 }
 
@@ -212,8 +221,10 @@ tidy_gap <- function(gap) {
     start_value = gap$start_value,
     end_value = gap$end_value,
     change_value = gap$change,
+    time_start = gap$time_start,
     time_first_na = gap$time_first_na,
     time_end = gap$time_end,
+    na_duration = gap$na_duration,
     change_time = gap$change_time
   )
 }
