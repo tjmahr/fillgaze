@@ -3,6 +3,8 @@
 fillgaze
 ========
 
+[![Travis-CI Build Status](https://travis-ci.org/tjmahr/fillgaze.svg?branch=master)](https://travis-ci.org/tjmahr/fillgaze)
+
 The goal of fillgaze is to provide helper functions for interpolating missing eyetracking data.
 
 Installation
