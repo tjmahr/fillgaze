@@ -97,7 +97,7 @@ find_gaze_gaps <- function(data, var, time_var = NULL) {
     clean_change_per_time <- clean_vals / clean_times
     change_per_time <- df_gaps$change_value / df_gaps$change_time
 
-    typical_change <- sd(c(clean_change_per_time, change_per_time))
+    typical_change <- stats::sd(c(clean_change_per_time, change_per_time))
     df_gaps$sd_change <- change_per_time / typical_change
     # 10, 20, NA, 30, 40, NA, 50, 60 has SD(change) of 0, so division by 0
     # yields Inf. Convert to 0-ish.
