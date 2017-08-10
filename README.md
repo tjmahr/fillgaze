@@ -109,20 +109,21 @@ We can use `find_gaze_gaps()` to locate the gaps in a column of data. This funct
 ``` r
 find_gaze_gaps(df, GazeX) %>% 
   print(width = 120)
-#> # A tibble: 579 x 12
-#>     .var .time_var start_row end_row na_rows start_value end_value change_value time_first_na time_end change_time
-#>    <chr>     <chr>     <dbl>   <dbl>   <dbl>       <dbl>     <dbl>        <dbl>         <int>    <int>       <int>
-#>  1 GazeX    .rowid         1       4       2    1176.452  1184.452        8.000             2        4           2
-#>  2 GazeX    .rowid         5       7       1    1224.841  1187.916      -36.925             6        7           1
-#>  3 GazeX    .rowid         8      10       1    1203.642  1188.502      -15.140             9       10           1
-#>  4 GazeX    .rowid        11      13       1    1158.650  1171.602       12.952            12       13           1
-#>  5 GazeX    .rowid        14      16       1    1218.452  1188.027      -30.425            15       16           1
-#>  6 GazeX    .rowid        17      20       2    1208.003  1156.564      -51.439            18       20           2
-#>  7 GazeX    .rowid        20      22       1    1156.564  1191.023       34.459            21       22           1
-#>  8 GazeX    .rowid        23      25       1    1164.210  1171.983        7.773            24       25           1
-#>  9 GazeX    .rowid        26      28       1    1158.890  1194.300       35.410            27       28           1
-#> 10 GazeX    .rowid        29      31       1    1207.380  1179.723      -27.657            30       31           1
-#> # ... with 569 more rows, and 1 more variables: sd_change <dbl>
+#> # A tibble: 579 x 14
+#>     .var .time_var start_row end_row na_rows start_value end_value change_value time_start time_first_na time_end
+#>    <chr>     <chr>     <dbl>   <dbl>   <dbl>       <dbl>     <dbl>        <dbl>      <int>         <int>    <int>
+#>  1 GazeX    .rowid         1       4       2    1176.452  1184.452        8.000          1             2        4
+#>  2 GazeX    .rowid         5       7       1    1224.841  1187.916      -36.925          5             6        7
+#>  3 GazeX    .rowid         8      10       1    1203.642  1188.502      -15.140          8             9       10
+#>  4 GazeX    .rowid        11      13       1    1158.650  1171.602       12.952         11            12       13
+#>  5 GazeX    .rowid        14      16       1    1218.452  1188.027      -30.425         14            15       16
+#>  6 GazeX    .rowid        17      20       2    1208.003  1156.564      -51.439         17            18       20
+#>  7 GazeX    .rowid        20      22       1    1156.564  1191.023       34.459         20            21       22
+#>  8 GazeX    .rowid        23      25       1    1164.210  1171.983        7.773         23            24       25
+#>  9 GazeX    .rowid        26      28       1    1158.890  1194.300       35.410         26            27       28
+#> 10 GazeX    .rowid        29      31       1    1207.380  1179.723      -27.657         29            30       31
+#> # ... with 569 more rows, and 3 more variables: na_duration <int>,
+#> #   change_time <int>, sd_change <dbl>
 ```
 
 Each row describes a gap in the column.
@@ -137,20 +138,21 @@ The function also measure the duration of the gap (`change_time`). By default, i
 ``` r
 find_gaze_gaps(df, GazeX, time_var = Time) %>% 
   print(width = 120)
-#> # A tibble: 579 x 12
-#>     .var .time_var start_row end_row na_rows start_value end_value change_value time_first_na     time_end change_time
-#>    <chr>     <chr>     <dbl>   <dbl>   <dbl>       <dbl>     <dbl>        <dbl>         <dbl>        <dbl>       <dbl>
-#>  1 GazeX      Time         1       4       2    1176.452  1184.452        8.000  1.493309e+12 1.493309e+12    33.33179
-#>  2 GazeX      Time         5       7       1    1224.841  1187.916      -36.925  1.493309e+12 1.493309e+12    16.66602
-#>  3 GazeX      Time         8      10       1    1203.642  1188.502      -15.140  1.493309e+12 1.493309e+12    16.66602
-#>  4 GazeX      Time        11      13       1    1158.650  1171.602       12.952  1.493309e+12 1.493309e+12    16.66602
-#>  5 GazeX      Time        14      16       1    1218.452  1188.027      -30.425  1.493309e+12 1.493309e+12    16.66602
-#>  6 GazeX      Time        17      20       2    1208.003  1156.564      -51.439  1.493309e+12 1.493309e+12    20.12305
-#>  7 GazeX      Time        20      22       1    1156.564  1191.023       34.459  1.493309e+12 1.493309e+12    16.66577
-#>  8 GazeX      Time        23      25       1    1164.210  1171.983        7.773  1.493309e+12 1.493309e+12    16.66602
-#>  9 GazeX      Time        26      28       1    1158.890  1194.300       35.410  1.493309e+12 1.493309e+12    16.66602
-#> 10 GazeX      Time        29      31       1    1207.380  1179.723      -27.657  1.493309e+12 1.493309e+12    16.66577
-#> # ... with 569 more rows, and 1 more variables: sd_change <dbl>
+#> # A tibble: 579 x 14
+#>     .var .time_var start_row end_row na_rows start_value end_value change_value   time_start time_first_na     time_end
+#>    <chr>     <chr>     <dbl>   <dbl>   <dbl>       <dbl>     <dbl>        <dbl>        <dbl>         <dbl>        <dbl>
+#>  1 GazeX      Time         1       4       2    1176.452  1184.452        8.000 1.493309e+12  1.493309e+12 1.493309e+12
+#>  2 GazeX      Time         5       7       1    1224.841  1187.916      -36.925 1.493309e+12  1.493309e+12 1.493309e+12
+#>  3 GazeX      Time         8      10       1    1203.642  1188.502      -15.140 1.493309e+12  1.493309e+12 1.493309e+12
+#>  4 GazeX      Time        11      13       1    1158.650  1171.602       12.952 1.493309e+12  1.493309e+12 1.493309e+12
+#>  5 GazeX      Time        14      16       1    1218.452  1188.027      -30.425 1.493309e+12  1.493309e+12 1.493309e+12
+#>  6 GazeX      Time        17      20       2    1208.003  1156.564      -51.439 1.493309e+12  1.493309e+12 1.493309e+12
+#>  7 GazeX      Time        20      22       1    1156.564  1191.023       34.459 1.493309e+12  1.493309e+12 1.493309e+12
+#>  8 GazeX      Time        23      25       1    1164.210  1171.983        7.773 1.493309e+12  1.493309e+12 1.493309e+12
+#>  9 GazeX      Time        26      28       1    1158.890  1194.300       35.410 1.493309e+12  1.493309e+12 1.493309e+12
+#> 10 GazeX      Time        29      31       1    1207.380  1179.723      -27.657 1.493309e+12  1.493309e+12 1.493309e+12
+#> # ... with 569 more rows, and 3 more variables: na_duration <dbl>,
+#> #   change_time <dbl>, sd_change <dbl>
 ```
 
 The function also respects dplyr grouping, so that e.g., false gaps are not found between trials.
@@ -159,7 +161,7 @@ The function also respects dplyr grouping, so that e.g., false gaps are not foun
 df %>% 
   group_by(Trial) %>% 
   find_gaze_gaps(GazeX)
-#> # A tibble: 561 x 13
+#> # A tibble: 561 x 15
 #>    Trial  .var .time_var start_row end_row na_rows start_value end_value
 #>    <int> <chr>     <chr>     <dbl>   <dbl>   <dbl>       <dbl>     <dbl>
 #>  1     1 GazeX    .rowid         1       4       2    1176.452  1184.452
@@ -172,9 +174,9 @@ df %>%
 #>  8     1 GazeX    .rowid        23      25       1    1164.210  1171.983
 #>  9     1 GazeX    .rowid        26      28       1    1158.890  1194.300
 #> 10     1 GazeX    .rowid        29      31       1    1207.380  1179.723
-#> # ... with 551 more rows, and 5 more variables: change_value <dbl>,
-#> #   time_first_na <int>, time_end <int>, change_time <int>,
-#> #   sd_change <dbl>
+#> # ... with 551 more rows, and 7 more variables: change_value <dbl>,
+#> #   time_start <int>, time_first_na <int>, time_end <int>,
+#> #   na_duration <int>, change_time <int>, sd_change <dbl>
 ```
 
 ### Interpolating values in gaps
@@ -247,7 +249,6 @@ last_plot() %+%
   aes(alpha = head(was_offscreen, 40), shape = head(was_offscreen, 40)) + 
   scale_alpha_discrete(name = "Point", range = c(.3, 1)) + 
   labs(shape = "Point")
-#> Warning: Removed 1 rows containing missing values (geom_point).
 ```
 
 ![](fig/README-interpolated-1.png)

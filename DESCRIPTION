@@ -1,6 +1,6 @@
 Package: fillgaze
 Title: Interpolate Missing Eyetracking Data
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: person("Tristan", "Mahr", email = "tristan.mahr@gmail.com", role = c("aut", "cre"))
 Description: This packages provides tools for dealing with missing eyetracking
     data. Namely, it identifies gaps of missing eyetracking data and allows the 
