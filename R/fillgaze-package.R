@@ -159,17 +159,23 @@ fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL, max_d
   dots <- quos(...)
   time_var <- enquo(time_var)
 
+
   columns_to_fill <- tidyselect::vars_select(names(data), !!! dots)
   vars <- quos(!!! syms(columns_to_fill))
 
   data_grouped <- split(data, group_indices(data))
 
+  # Find the gaps in a column in the current dataframe
   prepare_gaps <- function(var) {
     df <- find_gaze_gaps(data, !! var, !! time_var)
+    # Avoid `Undefined global functions or variables` for these columns
+    na_rows <- sym("na_rows")
+    na_duration <- sym("na_duration")
+    sd_change <- sym("sd_change")
     if (nrow(df) != 0) {
-      df <- filter(df, !treat_empty_as_false(na_rows > max_na_rows))
-      df <- filter(df, !treat_empty_as_false(na_duration > max_duration))
-      df <- filter(df, !treat_empty_as_false(abs(sd_change) > max_sd))
+      df <- filter(df, !treat_empty_as_false(UQ(na_rows) > max_na_rows))
+      df <- filter(df, !treat_empty_as_false(UQ(na_duration) > max_duration))
+      df <- filter(df, !treat_empty_as_false(abs(!! sd_change) > max_sd))
     }
     df
   }
