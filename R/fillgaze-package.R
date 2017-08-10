@@ -16,7 +16,7 @@ NULL
 #'   `var1 = is.finite` would replace all the values in the column `var1` where
 #'   `is.finite()` returns `TRUE` with `NA`` values. These predicate functions
 #'   can be defined using the [formula syntax for anonymous
-#'   functions][rlang::as_function]
+#'   functions][rlang::as_function].
 #' @return a modified copy of the dataframe
 #' @export
 #' @examples
@@ -38,7 +38,7 @@ set_values_to_na <- function(data, ...) {
 
 #' Find gaps in a column of eyetracking data
 #'
-#' @inheritParams set_values_to_na
+#' @param data a dataframe of eyetracking data
 #' @param var the name of a column in `data` to check for gaps
 #' @param time_var (optional) the name of a column in `data` containing the
 #'   timestamps of eyetracking samples. Defaults to using row numbers.
@@ -162,12 +162,26 @@ find_gaps_in_group <- function(data, var, time_var) {
 }
 
 
+#' Fill in gaps of missing eyetracking data
+#'
+#' @inheritParams find_gaze_gaps
+#' @param ... columns to interpolate selected using [dplyr selection
+#'   semantics][dplyr::select_helpers]
+#' @param max_na_rows (optional) do not fill in gaps larger than `max_na_rows`
+#'   rows
+#' @param max_duration (optional) do not fill in gaps longer than `max_na_rows`
+#'   in duration
+#' @param max_sd (optional/experimental) do not fill in gaps where the change
+#'   from pre-missing to post-missing is more than `max_sd` * _z_, where _z_ is
+#'   the standard deviation of frame-to-frame changes in values in that column.
+#' @return the dataframe with interpolated eyetracking data
 #' @export
-fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL, max_duration = NULL,  max_sd = NULL) {
+#' @details This function respects groupings created by [dplyr::group_by()].
+fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL,
+                           max_duration = NULL,  max_sd = NULL) {
   func <- stats::median
   dots <- quos(...)
   time_var <- enquo(time_var)
-
 
   columns_to_fill <- tidyselect::vars_select(names(data), !!! dots)
   vars <- quos(!!! syms(columns_to_fill))
@@ -209,8 +223,6 @@ fill_gaze_gaps <- function(data, ..., time_var = NULL, max_na_rows = NULL, max_d
 
 
 
-
-
 # Simple container for the information we care about when interpolating a gap
 gap <- function(start, end, na_size, data, times) {
   list(
@@ -244,12 +256,8 @@ tidy_gap <- function(gap) {
   )
 }
 
-
-
-
 treat_empty_as_false <- function(xs) {
   if (length_zero(xs)) FALSE else xs
 }
 
 length_zero <- function(x) length(x) == 0
-

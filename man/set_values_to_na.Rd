@@ -14,7 +14,7 @@ replaced with NAs. The functions should be named, so that the argument
 \code{var1 = is.finite} would replace all the values in the column \code{var1} where
 \code{is.finite()} returns \code{TRUE} with `NA`` values. These predicate functions
 can be defined using the \link[rlang:as_function]{formula syntax for anonymous
-functions}}
+functions}.}
 }
 \value{
 a modified copy of the dataframe
