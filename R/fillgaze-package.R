@@ -10,7 +10,7 @@ NULL
 
 #' Set values in dataframe columns to NA
 #'
-#' @param data a dataframe
+#' @param data a dataframe of eyetracking data
 #' @param ... predicate functions that return true whenever a value should be
 #'   replaced with NAs. The functions should be named, so that the argument
 #'   `var1 = is.finite` would replace all the values in the column `var1` where
@@ -36,7 +36,16 @@ set_values_to_na <- function(data, ...) {
 }
 
 
+#' Find gaps in a column of eyetracking data
+#'
+#' @inheritParams set_values_to_na
+#' @param var the name of a column in `data` to check for gaps
+#' @param time_var (optional) the name of a column in `data` containing the
+#'   timestamps of eyetracking samples. Defaults to using row numbers.
+#' @return a dataframe with one row per gap of eyetracking data.
 #' @export
+#'
+#' @details This function respects groupings created by [dplyr::group_by()].
 find_gaze_gaps <- function(data, var, time_var = NULL) {
   var <- enquo(var)
   time_var <- enquo(time_var)

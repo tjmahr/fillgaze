@@ -7,7 +7,7 @@
 set_values_to_na(data, ...)
 }
 \arguments{
-\item{data}{a dataframe}
+\item{data}{a dataframe of eyetracking data}
 
 \item{...}{predicate functions that return true whenever a value should be
 replaced with NAs. The functions should be named, so that the argument
